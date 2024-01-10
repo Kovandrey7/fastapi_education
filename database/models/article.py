@@ -4,10 +4,11 @@ from datetime import datetime
 from sqlalchemy import Integer, String, func, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from database.models import Base
+from database.db_helper import db_helper
+from database.models.base import Base
 
 if TYPE_CHECKING:
-    from .user import User
+    from auth import User
 
 
 class Article(Base):
