@@ -10,7 +10,7 @@ from database.db_helper import db_helper
 from database.models.base import Base
 
 if TYPE_CHECKING:
-    from database.models.article import Article
+    from .article import Article
 
 
 class User(SQLAlchemyBaseUserTable[int], Base):
