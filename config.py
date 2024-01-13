@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     DB_PASS: str
     DB_NAME: str
     ECHO: bool
+    SECRET: str
 
     @property
     def DB_URL(self):

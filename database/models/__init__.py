@@ -1,8 +1,5 @@
-__all__ = (
-    "Base",
-    "Article"
-
-)
+__all__ = ("Base", "User", "Article")
 
 from .base import Base
+from .user import User
 from .article import Article
