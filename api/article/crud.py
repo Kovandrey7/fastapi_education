@@ -19,8 +19,8 @@ async def _create_article(article_in: ArticleCreate, user_id: int) -> Article:
 async def _get_articles(
     filter_username: str | None,
     filter_date: date | None,
-    skip: int = 0,
-    limit: int = 10,
+    page: int = 0,
+    limit: int = 5,
 ) -> list[Article]:
     async with db_helper.session_factory() as session:
         if filter_date and filter_username:
@@ -33,7 +33,7 @@ async def _get_articles(
                     User.username == filter_username,
                 )
                 .order_by(Article.id)
-                .offset(skip)
+                .offset((page - 1) * limit)
                 .limit(limit)
             )
             articles = await session.scalars(query)
@@ -45,7 +45,7 @@ async def _get_articles(
                 .options(joinedload(Article.user))
                 .where(User.username == filter_username)
                 .order_by(Article.id)
-                .offset(skip)
+                .offset((page - 1) * limit)
                 .limit(limit)
             )
             articles = await session.scalars(query)
@@ -56,7 +56,7 @@ async def _get_articles(
                 .options(joinedload(Article.user))
                 .where(cast(Article.created_at, Date) == cast(filter_date, Date))
                 .order_by(Article.id)
-                .offset(skip)
+                .offset((page - 1) * limit)
                 .limit(limit)
             )
             articles = await session.scalars(query)
@@ -66,7 +66,7 @@ async def _get_articles(
                 select(Article)
                 .options(joinedload(Article.user))
                 .order_by(Article.id)
-                .offset(skip)
+                .offset((page - 1) * limit)
                 .limit(limit)
             )
             articles = await session.scalars(query)

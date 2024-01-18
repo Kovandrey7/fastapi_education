@@ -41,15 +41,15 @@ async def create_article(
 
 @router.get("/", response_model=list[ShowArticle], status_code=status.HTTP_200_OK)
 async def get_articles(
-    skip: int = 0,
-    limit: int = 10,
+    page: int = 1,
+    limit: int = 5,
     filter_username: Annotated[str | None, Query(alias="username")] = None,
     filter_date: Annotated[
         date | None, Query(alias="date", description="Format 2024-01-21")
     ] = None,
 ) -> list[ShowArticle]:
     articles = await _get_articles(
-        skip=skip, limit=limit, filter_username=filter_username, filter_date=filter_date
+        page=page, limit=limit, filter_username=filter_username, filter_date=filter_date
     )
     return [
         ShowArticle(
