@@ -1,27 +1,53 @@
-from fastapi_users import FastAPIUsers
-from fastapi_users.authentication import CookieTransport, AuthenticationBackend
-from fastapi_users.authentication import JWTStrategy
+from typing import Annotated
 
-from authentication.manager import get_user_manager
-from database.models import User
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from sqlalchemy import select
+
+from authentication.hashed_password import verify_password
 from config import settings
+from database.db_helper import db_helper
+from database.models import User
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/token")
 
 
-cookie_transport = CookieTransport(cookie_max_age=3600)
+async def _get_user_by_email(email: str) -> User:
+    async with db_helper.session_factory() as session:
+        query = select(User).where(User.email == email)
+        user = await session.scalar(query)
+        if user is not None:
+            return user
 
 
-def get_jwt_strategy() -> JWTStrategy:
-    return JWTStrategy(secret=settings.SECRET, lifetime_seconds=3600)
+async def authenticate_user(email: str, password: str):
+    user = await _get_user_by_email(email=email)
+    if not user:
+        return False
+    if not verify_password(password, user.hashed_password):
+        return False
+    return user
 
 
-auth_backend = AuthenticationBackend(
-    name="jwt",
-    transport=cookie_transport,
-    get_strategy=get_jwt_strategy,
-)
-
-fastapi_users = FastAPIUsers[User, int](
-    get_user_manager,
-    [auth_backend],
-)
-current_user = fastapi_users.current_user()
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+        )
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    user = await _get_user_by_email(email=email)
+    if user is None:
+        raise credentials_exception
+    return user

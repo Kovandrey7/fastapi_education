@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 
+from api.user.handlers import router as user_router
 from api.article.handlers import router as article_router
-from authentication.auth import auth_backend, fastapi_users
-from authentication.schemas import UserRead, UserCreate
+from authentication.login_handler import login_router
 
 app = FastAPI()
 
@@ -13,10 +13,6 @@ app.include_router(
     tags=["authentication"],
 )
 
-app.include_router(
-    fastapi_users.get_register_router(UserRead, UserCreate),
-    prefix="/authentication",
-    tags=["authentication"],
-)
-
+app.include_router(login_router)
+app.include_router(user_router)
 app.include_router(article_router)
