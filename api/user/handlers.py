@@ -5,7 +5,7 @@ from api.user.dependencies import user_by_id
 from api.user.schemas import UserCreate, ShowUser, UserDelete, UserUpdate
 from authentication.auth import get_current_user
 from database.models import User
-from authentication.hashed_password import get_password_hash
+from authentication.security import get_password_hash
 
 router = APIRouter(tags=["User"], prefix="/user")
 

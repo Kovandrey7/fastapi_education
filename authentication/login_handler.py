@@ -1,22 +1,25 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
 
-from api.user.schemas import ShowUser
-from authentication.auth import authenticate_user, get_current_user
-from authentication.create_token import create_access_token
+from authentication.auth import (
+    authenticate_user,
+    get_current_user,
+    get_current_user_with_refresh_token,
+)
 from authentication.schemas import Token
+from authentication.security import create_access_token, create_refresh_token
 from config import settings
 from database.models import User
 
 login_router = APIRouter(tags=["Login"], prefix="/login")
 
 
-@login_router.post("/token")
+@login_router.post("/login", status_code=status.HTTP_200_OK)
 async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], response: Response
 ) -> Token:
     user = await authenticate_user(form_data.username, form_data.password)
     if not user:
@@ -29,18 +32,50 @@ async def login_for_access_token(
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
-    return Token(access_token=access_token, token_type="bearer")
+    refresh_token_expires = timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES)
+    refresh_token = create_refresh_token(
+        data={"sub": user.email}, expires_delta=refresh_token_expires
+    )
+    response.set_cookie(key="access_token", value=access_token, httponly=True)
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True)
+    return Token(
+        access_token=access_token, refresh_token=refresh_token, token_type="bearer"
+    )
 
 
-@login_router.get("/users/me/", response_model=ShowUser)
-async def read_users_me(
-    current_user: Annotated[User, Depends(get_current_user)],
+@login_router.post("/refresh", status_code=status.HTTP_200_OK)
+async def refresh_access_token(
+    response: Response,
+    current_user: Annotated[User, Depends(get_current_user_with_refresh_token)],
 ):
-    return current_user
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": current_user.email}, expires_delta=access_token_expires
+    )
+    refresh_token_expires = timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES)
+    refresh_token = create_refresh_token(
+        data={"sub": current_user.email}, expires_delta=refresh_token_expires
+    )
+    response.set_cookie(key="access_token", value=access_token, httponly=True)
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True)
+    return Token(
+        access_token=access_token, refresh_token=refresh_token, token_type="bearer"
+    )
 
 
-@login_router.get("/users/me/items/")
-async def read_own_items(
-    current_user: Annotated[User, Depends(get_current_user)],
+@login_router.post("/logout", status_code=status.HTTP_200_OK)
+async def logout_and_expire_cookie(
+    response: Response, current_user: Annotated[User, Depends(get_current_user)]
 ):
-    return [{"item_id": "Foo", "owner": current_user.username}]
+    expires = datetime.utcnow() + timedelta(seconds=1)
+    response.set_cookie(
+        key="access_token",
+        httponly=True,
+        expires=expires.strftime("%a, %d %b %Y %H:%M:%S GMT"),
+    )
+    response.set_cookie(
+        key="refresh_token",
+        httponly=True,
+        expires=expires.strftime("%a, %d %b %Y %H:%M:%S GMT"),
+    )
+    return {"status": "Logout successfully"}
