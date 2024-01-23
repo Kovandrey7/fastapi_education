@@ -19,7 +19,7 @@ async def _create_user(user_in: UserCreate, hashed_password: str) -> User:
 
 async def _get_user_by_id(user_id: int) -> User:
     async with db_helper.session_factory() as session:
-        query = select(User).where(User.id == user_id)
+        query = select(User).where(User.id == user_id, User.is_active == True)
         user = await session.scalar(query)
         if user is not None:
             return user

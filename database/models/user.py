@@ -26,3 +26,11 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     articles: Mapped[list["Article"]] = relationship(back_populates="user")
+
+    @property
+    def is_superadmin(self) -> bool:
+        return Role.SUPERADMIN in self.role
+
+    @property
+    def is_admin(self) -> bool:
+        return Role.ADMIN in self.role

@@ -2,10 +2,11 @@ from fastapi import APIRouter, status, HTTPException, Depends
 
 from api.user.crud import _create_user, _delete_user, _update_user
 from api.user.dependencies import user_by_id
+from api.user.permissions import check_user_permissions_for_delete
 from api.user.schemas import UserCreate, ShowUser, UserDelete, UserUpdate
 from authentication.auth import get_current_user
-from database.models import User
 from authentication.security import get_password_hash
+from database.models import User
 
 router = APIRouter(tags=["User"], prefix="/user")
 
@@ -40,11 +41,13 @@ async def update_user(
 
 
 @router.delete("/", response_model=UserDelete, status_code=status.HTTP_200_OK)
-async def delete_user(user_id: int) -> UserDelete:
-    deleted_user_id = await _delete_user(user_id)
-    if deleted_user_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User with id {user_id} not found.",
-        )
+async def delete_user(
+    target_user_id: int, current_user: User = Depends(get_current_user)
+) -> UserDelete:
+    if not await check_user_permissions_for_delete(
+        target_user_id=target_user_id, current_user=current_user
+    ):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
+    deleted_user_id = await _delete_user(target_user_id)
     return UserDelete(deleted_user_id=deleted_user_id)
