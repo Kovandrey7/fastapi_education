@@ -36,6 +36,8 @@ async def get_current_user(request: Request):
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    if access_token is None:
+        raise credentials_exception
     try:
         payload = jwt.decode(
             access_token,
