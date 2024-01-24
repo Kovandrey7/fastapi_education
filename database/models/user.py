@@ -34,3 +34,11 @@ class User(Base):
     @property
     def is_admin(self) -> bool:
         return Role.ADMIN in self.role
+
+    def enrich_admin_roles_by_admin_role(self):
+        if not self.is_admin:
+            return list({*self.role, Role.ADMIN})
+
+    def remove_admin_privileges_from_model(self):
+        if self.is_admin:
+            return list({role for role in self.role if role != Role.ADMIN})

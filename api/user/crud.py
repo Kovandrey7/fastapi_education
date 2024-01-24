@@ -1,6 +1,6 @@
 from sqlalchemy import update, select
 
-from api.user.schemas import UserCreate, UserUpdate
+from api.user.schemas import UserCreate, UserUpdate, RolesUpdate
 from database.db_helper import db_helper
 from database.models import User
 
@@ -25,12 +25,12 @@ async def _get_user_by_id(user_id: int) -> User:
             return user
 
 
-async def _update_user(user_in: UserUpdate, user: User) -> User:
+async def _update_user(data: UserUpdate | RolesUpdate, user: User) -> User:
     async with db_helper.session_factory() as session:
         stmt = (
             update(User)
             .where(User.id == user.id)
-            .values(**user_in.model_dump(exclude_none=True))
+            .values(**data.model_dump(exclude_none=True))
             .returning(User)
         )
         user_update = await session.scalar(stmt)

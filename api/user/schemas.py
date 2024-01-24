@@ -19,5 +19,9 @@ class UserUpdate(BaseModel):
     email: EmailStr | None = None
 
 
+class RolesUpdate(BaseModel):
+    role: list
+
+
 class UserDelete(BaseModel):
     deleted_user_id: int
