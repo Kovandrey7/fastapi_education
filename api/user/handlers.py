@@ -60,24 +60,26 @@ async def grant_admin_privilege(
     target_user_id: int, current_user: User = Depends(get_current_user)
 ):
     if not current_user.is_superadmin:
-        raise HTTPException(status_code=403, detail="Forbidden.")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden.")
 
     if current_user.id == target_user_id:
         raise HTTPException(
-            status_code=400, detail="Cannot manage privileges of itself."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot manage privileges of itself.",
         )
 
     user_for_promotion = await _get_user_by_id(user_id=target_user_id)
 
     if user_for_promotion.is_admin or user_for_promotion.is_superadmin:
         raise HTTPException(
-            status_code=409,
+            status_code=status.HTTP_409_CONFLICT,
             detail=f"User with id {target_user_id} already promoted to admin / superadmin.",
         )
 
     if user_for_promotion is None:
         raise HTTPException(
-            status_code=404, detail=f"User with id {target_user_id} not found."
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with id {target_user_id} not found.",
         )
 
     new_roles = user_for_promotion.enrich_admin_roles_by_admin_role()
@@ -99,24 +101,26 @@ async def remove_admin_privilege(
     target_user_id: int, current_user: User = Depends(get_current_user)
 ):
     if not current_user.is_superadmin:
-        raise HTTPException(status_code=403, detail="Forbidden.")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden.")
 
     if current_user.id == target_user_id:
         raise HTTPException(
-            status_code=400, detail="Cannot manage privileges of itself."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot manage privileges of itself.",
         )
 
     user_for_revoke_admin_privileges = await _get_user_by_id(user_id=target_user_id)
 
     if not user_for_revoke_admin_privileges.is_admin:
         raise HTTPException(
-            status_code=409,
+            status_code=status.HTTP_409_CONFLICT,
             detail=f"User with id {target_user_id} has no admin privileges.",
         )
 
     if user_for_revoke_admin_privileges is None:
         raise HTTPException(
-            status_code=404, detail=f"User with id {target_user_id} not found."
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with id {target_user_id} not found.",
         )
 
     new_roles = user_for_revoke_admin_privileges.remove_admin_privileges_from_model()
