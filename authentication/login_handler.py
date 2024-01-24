@@ -28,13 +28,13 @@ async def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
+        data={"sub": user.email},
+        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
-    refresh_token_expires = timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES)
     refresh_token = create_refresh_token(
-        data={"sub": user.email}, expires_delta=refresh_token_expires
+        data={"sub": user.email},
+        expires_delta=timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES),
     )
     response.set_cookie(key="access_token", value=access_token, httponly=True)
     response.set_cookie(key="refresh_token", value=refresh_token, httponly=True)
@@ -48,13 +48,13 @@ async def refresh_access_token(
     response: Response,
     current_user: Annotated[User, Depends(get_current_user_with_refresh_token)],
 ):
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": current_user.email}, expires_delta=access_token_expires
+        data={"sub": current_user.email},
+        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
-    refresh_token_expires = timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES)
     refresh_token = create_refresh_token(
-        data={"sub": current_user.email}, expires_delta=refresh_token_expires
+        data={"sub": current_user.email},
+        expires_delta=timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES),
     )
     response.set_cookie(key="access_token", value=access_token, httponly=True)
     response.set_cookie(key="refresh_token", value=refresh_token, httponly=True)
@@ -64,18 +64,9 @@ async def refresh_access_token(
 
 
 @login_router.post("/logout", status_code=status.HTTP_200_OK)
-async def logout_and_expire_cookie(
+async def logout(
     response: Response, current_user: Annotated[User, Depends(get_current_user)]
 ):
-    expires = datetime.utcnow() + timedelta(seconds=1)
-    response.set_cookie(
-        key="access_token",
-        httponly=True,
-        expires=expires.strftime("%a, %d %b %Y %H:%M:%S GMT"),
-    )
-    response.set_cookie(
-        key="refresh_token",
-        httponly=True,
-        expires=expires.strftime("%a, %d %b %Y %H:%M:%S GMT"),
-    )
+    response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token")
     return {"status": "Logout successfully"}

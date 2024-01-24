@@ -28,7 +28,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
         settings.SECRET_KEY,
         algorithm=settings.ALGORITHM,
     )
-    return encoded_jwt
+    return f"Bearer {encoded_jwt}"
 
 
 def create_refresh_token(data: dict, expires_delta: timedelta | None = None):
