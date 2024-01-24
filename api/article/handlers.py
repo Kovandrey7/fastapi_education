@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status, Query
+from fastapi import APIRouter, Depends, status, Query, HTTPException
 
 from api.article.crud import (
     _create_article,
@@ -10,6 +10,7 @@ from api.article.crud import (
     _delete_article,
 )
 from api.article.dependencies import article_by_id
+from api.article.permissions import check_permissions
 from api.article.schemas import (
     ArticleCreate,
     ArticleUpdate,
@@ -86,11 +87,13 @@ async def get_article_by_id(article: Article = Depends(article_by_id)) -> ShowAr
 async def update_article(
     article_update: ArticleUpdate,
     article: Article = Depends(article_by_id),
-    user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> ShowArticleAfterUpdate:
+    check_permissions(article=article, current_user=current_user)
     article_update = await _update_article(
         article=article, article_update=article_update
     )
+
     return ShowArticleAfterUpdate(
         id=article_update.id,
         title=article_update.title,
@@ -102,7 +105,9 @@ async def update_article(
 
 @router.delete("/{article_id}/", status_code=status.HTTP_200_OK)
 async def delete_article(
-    article: Article = Depends(article_by_id), user: User = Depends(get_current_user)
+    article: Article = Depends(article_by_id),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
+    check_permissions(article=article, current_user=current_user)
     await _delete_article(article)
     return {"details": f"Article with id:{article.id} deleted successfully"}
