@@ -6,6 +6,7 @@ class ShowUser(BaseModel):
     username: str
     email: EmailStr
     role: list
+    is_active: bool
 
 
 class UserCreate(BaseModel):

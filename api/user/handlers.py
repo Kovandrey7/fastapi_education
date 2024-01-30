@@ -1,4 +1,6 @@
-from fastapi import APIRouter, status, HTTPException, Depends
+from typing import Annotated
+
+from fastapi import APIRouter, status, HTTPException, Depends, Path
 
 from api.user.crud import _create_user, _delete_user, _update_user, _get_user_by_id
 from api.user.dependencies import user_by_id
@@ -16,14 +18,22 @@ async def create_user(user_in: UserCreate) -> ShowUser:
     hashed_password = get_password_hash(user_in.password)
     user = await _create_user(user_in=user_in, hashed_password=hashed_password)
     return ShowUser(
-        id=user.id, username=user.username, email=user.email, role=user.role
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        role=user.role,
+        is_active=user.is_active,
     )
 
 
-@router.get("/", response_model=ShowUser, status_code=status.HTTP_200_OK)
+@router.get("/{user_id}/", response_model=ShowUser, status_code=status.HTTP_200_OK)
 async def get_user_by_id(user: User = Depends(user_by_id)) -> ShowUser:
     return ShowUser(
-        id=user.id, username=user.username, email=user.email, role=user.role
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        role=user.role,
+        is_active=user.is_active,
     )
 
 
@@ -34,15 +44,16 @@ async def update_user(
     user_update = await _update_user(data=user_in, user=user)
     return ShowUser(
         id=user_update.id,
-        username=user.username,
+        username=user_update.username,
         email=user_update.email,
-        role=user.role,
+        role=user_update.role,
+        is_active=user_update.is_active,
     )
 
 
-@router.delete("/", response_model=UserDelete, status_code=status.HTTP_200_OK)
+@router.delete("/{user_id}", response_model=UserDelete, status_code=status.HTTP_200_OK)
 async def delete_user(
-    target_user_id: int, current_user: User = Depends(get_current_user)
+    target_user_id: Annotated[int, Path], current_user: User = Depends(get_current_user)
 ) -> UserDelete:
     if not await check_user_permissions_for_delete(
         target_user_id=target_user_id, current_user=current_user
@@ -91,6 +102,7 @@ async def grant_admin_privilege(
         username=updated_user.username,
         email=updated_user.email,
         role=updated_user.role,
+        is_active=updated_user.is_active,
     )
 
 
@@ -134,4 +146,5 @@ async def remove_admin_privilege(
         username=updated_user.username,
         email=updated_user.email,
         role=updated_user.role,
+        is_active=updated_user.is_active,
     )
