@@ -1,10 +1,12 @@
-from fastapi import HTTPException, status
+from typing import Annotated
+
+from fastapi import HTTPException, status, Path
 
 from api.user.crud import _get_user_by_id
 from database.models import User
 
 
-async def user_by_id(user_id: int) -> User:
+async def user_by_id(user_id: Annotated[int, Path]) -> User:
     user = await _get_user_by_id(user_id)
     if user is not None:
         return user
